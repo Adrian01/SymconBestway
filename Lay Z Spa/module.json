@@ -1,0 +1,16 @@
+{
+    "id": "{2FC949AD-D1B6-88EA-C058-5C13C425EDAE}",
+    "name": "Lay Z Spa",
+    "type": 3,
+    "vendor": "Bestway",
+    "aliases": [],
+    "parentRequirements": [
+        "{794B2893-AE1B-7E5B-6A49-EF5B64DECBD6}"
+    ],
+    "childRequirements": [],
+    "implemented": [
+        "{90A6F28E-138D-58AB-9375-69F703FA3F84}"
+    ],
+    "prefix": "BWD",
+    "url": ""
+}

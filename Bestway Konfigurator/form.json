@@ -1,0 +1,12 @@
+{
+    "elements": [],
+    "actions": [
+        
+        {
+            "type": "Button",
+            "caption": "Login",
+            "onClick": "BWCF_TestSend($id);"
+        }
+    ],
+    "status": []
+}

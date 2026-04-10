@@ -1,0 +1,12 @@
+{
+    "id": "{7FE00CD7-793B-952D-3AF2-AA764667556B}",
+    "name": "Bestway Konfigurator",
+    "type": 4,
+    "vendor": "",
+    "aliases": [],
+    "parentRequirements": ["{46D61951-AEDB-BFC8-8224-EAC2DEAF911E}"],
+    "childRequirements": [],
+    "implemented": ["{85B6DB8A-D3E5-90CA-1DA1-F1BAE1961EB0}"],
+    "prefix": "BWC",
+    "url": ""
+}

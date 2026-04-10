@@ -1,0 +1,24 @@
+{
+    "id": "{9B395CBB-BFAB-442A-10D1-C451B480ABCB}",
+    "name": "Bestway Cloud Splitter",
+    "type": 2,
+    "vendor": "Bestway",
+    "aliases": [],
+    "parentRequirements": [
+        "{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}"
+    ],
+    "childRequirements": [
+        "{90A6F28E-138D-58AB-9375-69F703FA3F84}",
+        "{85B6DB8A-D3E5-90CA-1DA1-F1BAE1961EB0}"
+    ],
+    "implemented": 
+    [   
+        "{018EF6B5-AB94-40C6-AA53-46943E824ACF}",
+        "{794B2893-AE1B-7E5B-6A49-EF5B64DECBD6}",
+        "{46D61951-AEDB-BFC8-8224-EAC2DEAF911E}"
+     
+
+    ],
+    "prefix": "BWS",
+    "url": ""
+}
