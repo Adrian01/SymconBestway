@@ -38,6 +38,8 @@ class BestwayCloudSplitter extends IPSModule
 
         $this->RegisterTimer('Heartbeat', 0, 'BWS_SendHeartbeat($_IPS["TARGET"]);');
 
+        // Kernel-Nachrichten registrieren, damit KR_READY nach einem Symcon-Neustart abgefangen wird
+        $this->RegisterMessage(0, IPS_KERNELMESSAGE);
     }
 
     public function ApplyChanges()
@@ -58,9 +60,23 @@ class BestwayCloudSplitter extends IPSModule
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
     {
         $this->SendDebug(__FUNCTION__, 'SenderID: ' . $SenderID . ' | Message: ' . $Message . ' | Data: ' . json_encode($Data), 0);
+
+        // Nach Kernel-Start IM_CHANGESTATUS nachregistrieren und ggf. sofort authentifizieren
+        if ($Message === IPS_KERNELMESSAGE && ($Data[0] ?? -1) === KR_READY) {
+            $parentID = IPS_GetInstance($this->InstanceID)['ConnectionID'];
+            if ($parentID > 0) {
+                $this->RegisterMessage($parentID, IM_CHANGESTATUS);
+            }
+            if ($this->IsParentActive()) {
+                $this->SendDebug(__FUNCTION__, 'KR_READY: Parent bereits aktiv → AuthenticateWebSocket', 0);
+                $this->AuthenticateWebSocket();
+            }
+            return;
+        }
+
         $status = $Data[0] ?? -1;
 
-        if ($status === IS_ACTIVE) 
+        if ($status === IS_ACTIVE)
             {
                 $this->SendDebug(__FUNCTION__, 'Parent aktiv, starte WebSocket Authentifizierung...', 0);
                 $this->AuthenticateWebSocket();
@@ -134,7 +150,13 @@ class BestwayCloudSplitter extends IPSModule
 
             }
 
-        if ($cmd === 's2c_noti') 
+        if ($cmd === 'pong')
+            {
+                $this->SendDebug('[WebSocket] Heartbeat', '← Pong empfangen', 0);
+                return;
+            }
+
+        if ($cmd === 's2c_noti')
             {
                 //Letzte WebSocket Nachricht zwischenspeichern
                 $this->SetBuffer('LastNotification', json_encode($wsData));
@@ -286,12 +308,20 @@ class BestwayCloudSplitter extends IPSModule
 
     //WebSocketverbindung authentifizieren
     public function AuthenticateWebSocket(): void
-    {   
+    {
+        // Sicherstellen dass ein gültiger Token vorliegt, ggf. neu einloggen
+        if (!$this->EnsureAccessToken()) {
+            $this->SendDebug(__FUNCTION__, 'Token abgelaufen oder fehlend → FetchAccessToken', 0);
+            if (!$this->FetchAccessToken()) {
+                $this->SendDebug(__FUNCTION__, 'Token-Erneuerung fehlgeschlagen, Abbruch', 0);
+                return;
+            }
+        }
 
         $UID = $this->ReadAttributeString('UID');
         $AccessToken = $this->ReadAttributeString('Token');
 
-        if ($UID === '' || $AccessToken === '') 
+        if ($UID === '' || $AccessToken === '')
         {
             $this->SendDebug(__FUNCTION__, 'UID oder Token fehlt', 0);
             return;
@@ -318,7 +348,15 @@ class BestwayCloudSplitter extends IPSModule
     //Heartbeat an den WebSocket senden, WebSocket wird andernfalls nach 180 Sekunden geschlossen.
     public function SendHeartbeat(): void
     {
-        if (!$this->ReadAttributeBoolean('WebSocketConnectionState')) 
+        // Stiller Drop: Parent nicht mehr aktiv, obwohl State noch true ist
+        if (!$this->IsParentActive()) {
+            $this->SendDebug(__FUNCTION__, 'Parent nicht aktiv → State zurücksetzen, Heartbeat stoppen', 0);
+            $this->WriteAttributeBoolean('WebSocketConnectionState', false);
+            $this->SetTimerInterval('Heartbeat', 0);
+            return;
+        }
+
+        if (!$this->ReadAttributeBoolean('WebSocketConnectionState'))
         {
             $this->SendDebug(__FUNCTION__, 'Heartbeat übersprungen, WebSocket nicht eingeloggt', 0);
             return;
@@ -570,4 +608,3 @@ class BestwayCloudSplitter extends IPSModule
     }
 
 }
-
