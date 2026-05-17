@@ -37,21 +37,24 @@ class BestwayCloudSplitter extends IPSModule
         $this->RegisterAttributeBoolean('WebSocketConnectionState', false);
 
         $this->RegisterTimer('Heartbeat', 0, 'BWS_SendHeartbeat($_IPS["TARGET"]);');
-
-        // Kernel-Nachrichten registrieren, damit KR_READY nach einem Symcon-Neustart abgefangen wird
-        $this->RegisterMessage(0, IPS_KERNELMESSAGE);
     }
 
     public function ApplyChanges()
     {
         parent::ApplyChanges();
-        
-        if (IPS_GetKernelRunlevel() !== KR_READY) 
+
+        // Muss VOR dem KR_READY-Check stehen: überlebt keinen Neustart in Create()
+        $this->RegisterMessage(0, IPS_KERNELMESSAGE);
+
+        if (IPS_GetKernelRunlevel() !== KR_READY)
             {
                 return;
             }
 
-        $this->RegisterMessage(IPS_GetInstance($this->InstanceID)['ConnectionID'], IM_CHANGESTATUS);
+        $parentID = IPS_GetInstance($this->InstanceID)['ConnectionID'];
+        if ($parentID > 0) {
+            $this->RegisterMessage($parentID, IM_CHANGESTATUS);
+        }
         $this->WriteAttributeBoolean('WebSocketConnectionState', false);
 
     }
