@@ -43,19 +43,24 @@ class BestwayKonfigurator extends IPSModule
     {
         $devices = $this->GetDevices();
         $values = [];
+        $knownInstanceIDs = [];
 
-        foreach ($devices as $device) 
+        foreach ($devices as $device)
             {
                 $deviceID = (string) ($device['did'] ?? '');
                 $name = (string) ($device['dev_alias'] ?? $deviceID);
 
-                if ($deviceID === '') 
+                if ($deviceID === '')
                     {
                         continue;
                     }
 
                 $instanceID = $this->GetInstanceIDByDeviceID($deviceID);
                 $lastTimestamp = (int) ($device['state_last_timestamp'] ?? 0);
+
+                if ($instanceID !== 0) {
+                    $knownInstanceIDs[] = $instanceID;
+                }
 
                 $values[] =
                 [
@@ -66,14 +71,43 @@ class BestwayKonfigurator extends IPSModule
                     'isOnline'         => ((bool) ($device['is_online'] ?? false)) ? 'Online' : 'Offline',
                     'lastUpdatedRaw'   => $lastTimestamp,
                     'instanceID'       => $instanceID,
-                    'create' => 
+                    'create' =>
                         [
                             'moduleID' => self::DEVICE_GUID,
                             'name'     => $name,
-                            'configuration' => ['DeviceID' => $deviceID]       
+                            'configuration' => ['DeviceID' => $deviceID]
                         ]
                 ];
             }
+
+        // Lokale Geräte-Instanzen am eigenen Splitter, die nicht in der Cloud vorhanden sind (werden rot angezeigt)
+        $parentID = IPS_GetInstance($this->InstanceID)['ConnectionID'];
+
+        if ($parentID !== 0) {
+            foreach (IPS_GetInstanceListByModuleID(self::DEVICE_GUID) as $instanceID) {
+                if (IPS_GetInstance($instanceID)['ConnectionID'] !== $parentID) {
+                    continue;
+                }
+
+                if (in_array($instanceID, $knownInstanceIDs, true)) {
+                    continue;
+                }
+
+                $configuration = json_decode(IPS_GetConfiguration($instanceID), true);
+                $deviceID = is_array($configuration) ? (string) ($configuration['DeviceID'] ?? '') : '';
+
+                $values[] =
+                [
+                    'name'           => IPS_GetName($instanceID),
+                    'deviceID'       => $deviceID,
+                    'product_name'   => '',
+                    'lastUpdated'    => '',
+                    'isOnline'       => '',
+                    'lastUpdatedRaw' => 0,
+                    'instanceID'     => $instanceID,
+                ];
+            }
+        }
 
         $form = [
             'actions' => [
@@ -139,12 +173,20 @@ class BestwayKonfigurator extends IPSModule
 	// Hilfsfunktionen
 	// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    //InstanzID über DeviceID auslesen
+    //InstanzID über DeviceID auslesen (nur Instanzen am eigenen Splitter)
     private function GetInstanceIDByDeviceID(string $deviceID): int
     {
-        $instanceIDs = IPS_GetInstanceListByModuleID(self::DEVICE_GUID);
+        $parentID = IPS_GetInstance($this->InstanceID)['ConnectionID'];
 
-        foreach ($instanceIDs as $instanceID) {
+        if ($parentID === 0) {
+            return 0;
+        }
+
+        foreach (IPS_GetChildrenIDs($parentID) as $instanceID) {
+            if (IPS_GetInstance($instanceID)['ModuleInfo']['ModuleID'] !== self::DEVICE_GUID) {
+                continue;
+            }
+
             $configuration = json_decode(IPS_GetConfiguration($instanceID), true);
 
             if (!is_array($configuration)) {

@@ -404,14 +404,14 @@ class LayZSpa extends IPSModule
         }
     }
     
-    //Errorcodes verarbeiten
+    //Errorcodes verarbeiten (offizielle Lay-Z-Spa Fehlercodes gemäß Hersteller)
     private function GetActiveErrorCodes(array $attrs): array
     {
+        $knownErrorCodes = ['E01', 'E02', 'E03', 'E04', 'E05', 'E08', 'E09', 'E10', 'E11', 'E12', 'E13'];
+
         $errors = [];
 
-        for ($i = 1; $i <= 32; $i++) {
-            $key = 'E' . str_pad((string) $i, 2, '0', STR_PAD_LEFT);
-
+        foreach ($knownErrorCodes as $key) {
             if (!array_key_exists($key, $attrs)) {
                 continue;
             }
