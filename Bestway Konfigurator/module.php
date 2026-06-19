@@ -182,8 +182,8 @@ class BestwayKonfigurator extends IPSModule
             return 0;
         }
 
-        foreach (IPS_GetChildrenIDs($parentID) as $instanceID) {
-            if (IPS_GetInstance($instanceID)['ModuleInfo']['ModuleID'] !== self::DEVICE_GUID) {
+        foreach (IPS_GetInstanceListByModuleID(self::DEVICE_GUID) as $instanceID) {
+            if (IPS_GetInstance($instanceID)['ConnectionID'] !== $parentID) {
                 continue;
             }
 
